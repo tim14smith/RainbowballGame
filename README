@@ -1,0 +1,5 @@
+Basic SDL Project:
+
+	compile using
+		gcc -o outfile filename.c -lSDL -lSDL_image 
+	to link the SDL libraries to the project (may need ttf and mixer, too)
