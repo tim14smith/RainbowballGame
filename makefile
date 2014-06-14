@@ -1,4 +1,4 @@
 sdl-prog:
-	gcc -o sdl-prog sdl-rainbowball.c -lSDL -lSDL_image
+	gcc -o rainbowball-game sdl-rainbowball.c -lSDL -lSDL_image
 clean:
-	rm sdl-prog
+	rm rainbowball-game
