@@ -3,12 +3,25 @@
 
 #include "SDL/SDL.h"
 #include "SDL/SDL_image.h"
+#include "SDL/SDL_ttf.h"
+#include "SDL/SDL_mixer.h"
 #include <stdbool.h>
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+int SCREEN_WIDTH = 640;
+int SCREEN_HEIGHT = 480;
 const int SCREEN_BPP = 32;
+
+const int PIXELS_PER_MOVE = 10;
+const int MS_PER_FRAME = 30;
+
+const int MESSAGE_X_Y = 140;
 char * IMAGE_FILE_NAME = "dots.png";
+char * FONT_FILE_NAME = "PT_Sans-Web-Regular.ttf";
+char * MUSIC_FILE_NAME = "rock_beat.wav";
+
+SDL_Surface *message = NULL;
+TTF_Font *font = NULL;
+SDL_Color textColor = { 0, 0, 0 };
 
 SDL_Surface *image = NULL;
 SDL_Surface *screen = NULL;
@@ -20,6 +33,13 @@ int clip_index = 0;
 SDL_Event event;
 
 int count;
+int frame_start;
+
+// Whether or not we're trying to play music this time
+bool got_music;
+
+// Music to play
+Mix_Music *music = NULL;
 
 // Gets an image as an SDL_Surface in an optimized way
 SDL_Surface *load_image(char * filename) {
@@ -40,7 +60,6 @@ SDL_Surface *load_image(char * filename) {
 		
 		SDL_SetColorKey( optimizedImage, SDL_SRCCOLORKEY, colorkey );
 	}
-
 	return optimizedImage;
 }
 
@@ -60,20 +79,30 @@ bool init() {
 		return false; 
 	} 
 	//Set up the screen 
-	screen = SDL_SetVideoMode( SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP, SDL_SWSURFACE ); 
+	screen = SDL_SetVideoMode( SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP, SDL_SWSURFACE | SDL_RESIZABLE ); 
 
 	if( screen == NULL ) { 
 		return false; 
-	} 
+	}
+	
+	//Initialize SDL_ttf 
+	if( TTF_Init() == -1 ) { 
+		return false;
+	}
+	
+	//Initialize SDL_mixer 
+	if( Mix_OpenAudio( 22050, MIX_DEFAULT_FORMAT, 2, 4096 ) == -1 ) {
+		return false;
+	}
 
 	//Set the window caption 
-	SDL_WM_SetCaption( "Use The Arrow Keys to Move the Ball", NULL ); 
+	SDL_WM_SetCaption( "Rainbowball Game", NULL ); 
 
 	//If everything initialized fine 
 	return true; 
 }
 
-// Sets up initial image ("test_image.png" here) to be loaded
+// Open and set up initial files
 bool load_files() { 
 	//Load the image 
 	image = load_image( IMAGE_FILE_NAME ); 
@@ -82,13 +111,41 @@ bool load_files() {
 		return false; 
 	} 
 	
+	font = TTF_OpenFont(FONT_FILE_NAME, 28);
+	
+	if( font == NULL ) {
+		return false;
+	}
+	
+	music = Mix_LoadMUS( MUSIC_FILE_NAME );
+	
+	 if( music == NULL ) { 
+		 return false; 
+	}
+	
 	//If everything loaded fine 
 	return true; 
 }
 
 void clean_up() { 
-	//Free the image 
+	//Free all the surfaces 
 	SDL_FreeSurface( image ); 
+	
+	SDL_FreeSurface( message );
+	
+	SDL_FreeSurface( screen );
+	
+	Mix_FreeMusic( music ); 
+	
+	//Close the font 
+	TTF_CloseFont( font ); 
+	
+	//Quit SDL_mixer 
+	Mix_CloseAudio(); 
+	
+	//Quit SDL_ttf 
+	TTF_Quit();
+	
 	//Quit SDL 
 	SDL_Quit(); 
 }
@@ -98,7 +155,7 @@ void whiteOutScreen() {
 }
 
 SDL_Rect * nextClip() {
-	if (count == 50) {
+	if (count == PIXELS_PER_MOVE/2) {
 		clip_index = clip_index + 1;
 		clip_index = clip_index % 4;
 		count = 0;
@@ -133,6 +190,20 @@ void initClipArray() {
 	clip[ 3 ].h = 100;
 }
 
+bool try_playing_music() {
+	// There is no music playing
+	if( Mix_PlayingMusic() == 0 ) { 
+		//Play the music 
+		if( Mix_PlayMusic( music, -1 ) == -1 ) {
+			return false; 	
+		}
+	} else {
+		if (Mix_PausedMusic() == 1) {
+			Mix_ResumeMusic();
+		}
+	}
+}
+
 int main( int argc, char* args[] ) {
 	bool quit = false;
 
@@ -151,6 +222,10 @@ int main( int argc, char* args[] ) {
 	// Make the background white
 	whiteOutScreen();
 	
+	message = TTF_RenderText_Solid( font, "Arrow keys to move, R to restart", textColor );
+	
+	apply_surface(MESSAGE_X_Y, MESSAGE_X_Y, message, screen, NULL);
+
 	location.x = 0;
 	location.y = 0;
 	
@@ -161,50 +236,88 @@ int main( int argc, char* args[] ) {
 	}
 
 	while( quit == false ) {
+		frame_start = SDL_GetTicks();
 		while( SDL_PollEvent( &event ) ) {
 			if (event.type == SDL_QUIT) {
 				quit = true;
+			}
+			if (event.type == SDL_VIDEORESIZE) {
+				SCREEN_WIDTH = event.resize.w;
+				SCREEN_HEIGHT = event.resize.h;
+				screen = SDL_SetVideoMode( SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP, SDL_SWSURFACE | SDL_RESIZABLE );
+				whiteOutScreen();
+				// Show the arrow key message again
+				apply_surface(MESSAGE_X_Y, MESSAGE_X_Y, message, screen, NULL);
+				// Show the ball
+				location.x = 0;
+				location.y = 0;
+				apply_surface( location.x, location.y, image, screen, nextClip() );
 			}
 		}
 		
 		Uint8 *keystates = SDL_GetKeyState( NULL );
 		
+		if (keystates[SDLK_r]) {
+			clean_up();
+			main(0, NULL);
+		}
+		
+		got_music = false;
+		
 		if (keystates[SDLK_RIGHT] && !keystates[SDLK_LEFT]) {
 			if (location.x < SCREEN_WIDTH - (image->w / 2)) {
-				location.x++;
+				location.x+=PIXELS_PER_MOVE;
 				whiteOutScreen();
 				apply_surface(location.x, location.y, image, screen, nextClip());
+				try_playing_music();
+				got_music = true;
 			}
 		}
 		
 		if (keystates[SDLK_LEFT] && !keystates[SDLK_RIGHT]) {
 			if (location.x > 0) {
-				location.x--;
+				location.x-=PIXELS_PER_MOVE;
 				whiteOutScreen();
 				apply_surface(location.x, location.y, image, screen, nextClip());
+				try_playing_music();
+				got_music = true;
 			}
 		}
 		
 		if (keystates[SDLK_UP] && !keystates[SDLK_DOWN]) {
 			if (location.y > 0) {
-				location.y--;
+				location.y-=PIXELS_PER_MOVE;
 				whiteOutScreen();
 				apply_surface(location.x, location.y, image, screen, nextClip());
+				try_playing_music();
+				got_music = true;
 			}
 		}
 		
 		if (keystates[SDLK_DOWN] && !keystates[SDLK_UP]) {
 			if (location.y < SCREEN_HEIGHT - (image->h / 2)) {
-				location.y++;
+				location.y+=PIXELS_PER_MOVE;
 				whiteOutScreen();
 				apply_surface(location.x, location.y, image, screen, nextClip());
+				try_playing_music();
+				got_music = true;
 			}
 		}
 		
-		
+		if (!got_music) {
+			// If we shouldn't be playing music, pause any currently playing
+			if (Mix_PlayingMusic() != 0) {
+				Mix_PauseMusic();
+			}
+		}
 		
 		if( SDL_Flip( screen ) == -1 ) { 
 			return 1;
+		}
+		
+		int time_elapsed = SDL_GetTicks() - frame_start;
+		if (time_elapsed < MS_PER_FRAME) {
+			SDL_Delay(MS_PER_FRAME-time_elapsed);
 		}
 	}
 	

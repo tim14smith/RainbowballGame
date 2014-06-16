@@ -1,5 +1,23 @@
-Basic SDL Project:
+Rainbowball Game:
+	A basic SDL project (using SDL 1.2) with graphics and music.
+	(As of 6/15/2014, there is no further functionality).
 
-	compile using
-		gcc -o outfile filename.c -lSDL -lSDL_image 
-	to link the SDL libraries to the project (may need ttf and mixer, too)
+Author: Tim Smith (tim14smith@gmail.com)
+
+Requires (for compilation):
+	libsdl1.2-dev
+	libsdl-image1.2
+	libsdl-mixer1.2
+	libsdl-ttf2.0-0
+	gcc
+	make
+	
+Install - Windows
+The libraries are cross platform, and a Windows binary is included in the Win32bin directory with all of the runtime dependencies.
+
+Simply run rainbowball-game.exe from that directory.
+
+Install - Linux
+	Install the dependencies above (through your method of choice).
+	Run make in the same directory as the makefile.
+	Run the executeable (rainbowball-game) that was generated from make.
