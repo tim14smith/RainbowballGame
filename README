@@ -16,6 +16,7 @@ Install - Windows
 The libraries are cross platform, and a Windows binary is included in the Win32bin directory with all of the runtime dependencies.
 
 Simply run rainbowball-game.exe from that directory.
+	-This has not been updated, though (as of 6/15/2014), so it will not have any of the new features that are in the linux version now.
 
 Install - Linux
 	Install the dependencies above (through your method of choice).
