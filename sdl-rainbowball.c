@@ -14,9 +14,9 @@ const int SCREEN_BPP = 32;
 const int PIXELS_PER_MOVE = 10;
 const int MS_PER_FRAME = 30;
 
-const int MESSAGE_X_Y = 140;
+const int MESSAGE_X_Y = 80;
 char * IMAGE_FILE_NAME = "dots.png";
-char * FONT_FILE_NAME = "PT_Sans-Web-Regular.ttf";
+char * FONT_FILE_NAME = "retro-edge.ttf";
 char * MUSIC_FILE_NAME = "rock_beat.wav";
 
 SDL_Surface *message = NULL;
@@ -76,22 +76,26 @@ void apply_surface( int x, int y, SDL_Surface* source, SDL_Surface* dest, SDL_Re
 bool init() { 
 	//Initialize all SDL subsystems 
 	if( SDL_Init( SDL_INIT_EVERYTHING ) == -1 ) {
+		printf("Init everything failed.\n");
 		return false; 
 	} 
 	//Set up the screen 
 	screen = SDL_SetVideoMode( SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP, SDL_SWSURFACE | SDL_RESIZABLE ); 
 
 	if( screen == NULL ) { 
+		printf("Failed to load screen.\n");
 		return false; 
 	}
 	
 	//Initialize SDL_ttf 
 	if( TTF_Init() == -1 ) { 
+		printf("Init SDL TTF failed.\n");
 		return false;
 	}
 	
 	//Initialize SDL_mixer 
 	if( Mix_OpenAudio( 22050, MIX_DEFAULT_FORMAT, 2, 4096 ) == -1 ) {
+		printf("Init audio failed.\n");
 		return false;
 	}
 
@@ -108,18 +112,21 @@ bool load_files() {
 	image = load_image( IMAGE_FILE_NAME ); 
 
 	if( image == NULL ) { 
+		printf("Image not found at %s.\n", IMAGE_FILE_NAME);
 		return false; 
 	} 
 	
 	font = TTF_OpenFont(FONT_FILE_NAME, 28);
 	
 	if( font == NULL ) {
+		printf("Font not found at %s.\n", FONT_FILE_NAME);
 		return false;
 	}
 	
 	music = Mix_LoadMUS( MUSIC_FILE_NAME );
 	
 	 if( music == NULL ) { 
+		 printf("Music not found at %s.\n", MUSIC_FILE_NAME);
 		 return false; 
 	}
 	
