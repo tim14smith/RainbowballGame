@@ -27,7 +27,8 @@ SDL_Surface *image = NULL;
 SDL_Surface *screen = NULL;
 SDL_Rect location;
 
-SDL_Rect clip[4];
+const int NUM_CIRCLES = 8;
+SDL_Rect clip[8];
 int clip_index = 0;
 
 SDL_Event event;
@@ -164,7 +165,7 @@ void whiteOutScreen() {
 SDL_Rect * nextClip() {
 	if (count == PIXELS_PER_MOVE/2) {
 		clip_index = clip_index + 1;
-		clip_index = clip_index % 4;
+		clip_index = clip_index % NUM_CIRCLES;
 		count = 0;
 	}
 	count++;
@@ -172,29 +173,49 @@ SDL_Rect * nextClip() {
 }
 
 void initClipArray() {
-	//Clip range for the top left 
+	//Clip range for the top
 	clip[ 0 ].x = 0; 
 	clip[ 0 ].y = 0; 
 	clip[ 0 ].w = 100; 
 	clip[ 0 ].h = 100; 
 
-	//Clip range for the top right 
 	clip[ 1 ].x = 100; 
 	clip[ 1 ].y = 0; 
 	clip[ 1 ].w = 100; 
 	clip[ 1 ].h = 100; 
 
-	//Clip range for the bottom left 
-	clip[ 2 ].x = 0; 
-	clip[ 2 ].y = 100; 
+	clip[ 2 ].x = 200; 
+	clip[ 2 ].y = 0; 
 	clip[ 2 ].w = 100; 
 	clip[ 2 ].h = 100; 
 
-	//Clip range for the bottom right 
-	clip[ 3 ].x = 100; 
-	clip[ 3 ].y = 100; 
+	clip[ 3 ].x = 300; 
+	clip[ 3 ].y = 0; 
 	clip[ 3 ].w = 100; 
 	clip[ 3 ].h = 100;
+
+	//Clip range for the bottom  
+	clip[ 4 ].x = 0; 
+	clip[ 4 ].y = 100; 
+	clip[ 4 ].w = 100; 
+	clip[ 4 ].h = 100; 
+
+	clip[ 5 ].x = 100; 
+	clip[ 5 ].y = 100; 
+	clip[ 5 ].w = 100; 
+	clip[ 5 ].h = 100; 
+
+	clip[ 6 ].x = 200; 
+	clip[ 6 ].y = 100; 
+	clip[ 6 ].w = 100; 
+	clip[ 6 ].h = 100; 
+
+	clip[ 7 ].x = 300; 
+	clip[ 7 ].y = 100; 
+	clip[ 7 ].w = 100; 
+	clip[ 7 ].h = 100;
+
+
 }
 
 bool try_playing_music() {
@@ -272,7 +293,7 @@ int main( int argc, char* args[] ) {
 		got_music = false;
 		
 		if (keystates[SDLK_RIGHT] && !keystates[SDLK_LEFT]) {
-			if (location.x < SCREEN_WIDTH - (image->w / 2)) {
+			if (location.x < SCREEN_WIDTH - 100) {
 				location.x+=PIXELS_PER_MOVE;
 				whiteOutScreen();
 				apply_surface(location.x, location.y, image, screen, nextClip());
